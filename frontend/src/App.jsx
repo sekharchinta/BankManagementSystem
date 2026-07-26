@@ -46,4 +46,13 @@ const { isAuthenticated } = useContext(AuthContext);
             ? <Navigate to="/dashboard" replace />
             : <Login />
     }
+    path="/accounts"
+    element={
+        <ProtectedRoute>
+
+            <Accounts />
+
+        </ProtectedRoute>
+    }
+
 />

@@ -1,5 +1,13 @@
 export default function RecentTransactions({ transactions }) {
 
+    if (!transactions.length) {
+                        return (
+                            <div className="bg-white rounded-xl shadow p-8 text-center">
+                                No transactions available.          
+                            </div>
+                        );
+                    }
+
     return (
         <div className="bg-white rounded-xl shadow p-6">
 

@@ -46,13 +46,13 @@ export default function Dashboard() {
 
     }, []);
 
-    if (loading) {
-        return (
-            <Layout>
-                <h2>Loading...</h2>
-            </Layout>
-        );
-    }
+     if (loading) {
+                    return (
+                        <Layout>
+                            <Loader />
+                        </Layout>
+                    );
+                }
 
     return (
 
