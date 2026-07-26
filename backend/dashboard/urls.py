@@ -1,8 +1,14 @@
 from django.urls import path
-from .views import DashboardView
+
+from .views import (
+    DashboardSummaryView,
+    RecentTransactionView,
+)
 
 urlpatterns = [
-
-    path("",DashboardView.as_view())
-
+    path("summary/", DashboardSummaryView.as_view()),
+    path(
+        "recent-transactions/",
+        RecentTransactionView.as_view()
+    ),
 ]
