@@ -7,6 +7,8 @@ from .serializers import DepositSerializer
 from .services import deposit
 from .serializers import DepositSerializer, WithdrawSerializer
 from .services import deposit, withdraw
+from .serializers import TransferSerializer
+from .services import transfer
 
 class DepositView(APIView):
 
@@ -48,3 +50,30 @@ class WithdrawView(APIView):
                 "current_balance": account.balance
             }
         )
+
+class TransferView(APIView):
+
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+
+        serializer = TransferSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        sender, receiver = transfer(
+            **serializer.validated_data
+        )
+
+        return Response({
+            "message": "Transfer successful",
+
+            "sender": {
+                "account_number": sender.account_number,
+                "balance": sender.balance
+            },
+
+            "receiver": {
+                "account_number": receiver.account_number,
+                "balance": receiver.balance
+            }
+        })
