@@ -1,41 +1,26 @@
-from rest_framework import status
+from rest_framework import status, viewsets
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
+from .models import Customer
 from .serializers import CustomerSerializer
 from .services import create_customer
 
 
-class CustomerCreateView(APIView):
+class CustomerViewSet(viewsets.ModelViewSet):
+    queryset = Customer.objects.all().order_by("-id")
+    serializer_class = CustomerSerializer
+    permission_classes = [AllowAny]
 
-    def post(self, request):
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        serializer = CustomerSerializer(data=request.data)
+        customer = create_customer(serializer.validated_data)
 
-        if serializer.is_valid():
-
-            customer, account = create_customer(serializer.validated_data)
-
-            return Response(
-                {
-                    "message": "Customer created successfully",
-
-                    "customer": {
-                        "id": customer.id,
-                        "full_name": customer.full_name,
-                        "email": customer.email,
-                    },
-
-                    "account": {
-                        "account_number": account.account_number,
-                        "account_type": account.account_type,
-                        "balance": account.balance,
-                    }
-                },
-                status=status.HTTP_201_CREATED
-            )
+        response_serializer = CustomerSerializer(customer)
 
         return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
+            response_serializer.data,
+            status=status.HTTP_201_CREATED
         )

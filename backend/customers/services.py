@@ -4,17 +4,17 @@ from .models import Customer
 from accounts.models import Account
 
 
-def create_customer(data):
-    with transaction.atomic():
+@transaction.atomic
+def create_customer(validated_data):
 
-        account_type = data.pop("account_type")
+    account_type = validated_data.pop("account_type", "Savings")
 
-        customer = Customer.objects.create(**data)
+    customer = Customer.objects.create(**validated_data)
 
-        account = Account.objects.create(
-            customer=customer,
-            account_type=account_type,
-            balance=0
-        )
+    account = Account.objects.create(
+        customer=customer,
+        account_type=account_type,
+        balance=0
+    )
 
-        return customer, account
+    return customer
