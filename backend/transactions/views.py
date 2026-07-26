@@ -9,6 +9,8 @@ from .serializers import DepositSerializer, WithdrawSerializer
 from .services import deposit, withdraw
 from .serializers import TransferSerializer
 from .services import transfer
+from .models import Transaction
+from .serializers import TransactionSerializer
 
 class DepositView(APIView):
 
@@ -77,3 +79,54 @@ class TransferView(APIView):
                 "balance": receiver.balance
             }
         })
+
+
+
+class TransactionHistoryView(APIView):
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, account_number):
+
+        queryset = Transaction.objects.filter(
+            account__account_number=account_number
+        )
+
+        transaction_type = request.GET.get("type")
+
+        if transaction_type:
+            queryset = queryset.filter(
+                transaction_type=transaction_type
+            )
+
+        start = request.GET.get("start")
+        end = request.GET.get("end")
+
+        if start and end:
+            queryset = queryset.filter(
+                created_at__date__range=[start, end]
+            )
+
+        serializer = TransactionSerializer(
+            queryset,
+            many=True
+        )
+
+        return Response(serializer.data)
+
+class MiniStatementView(APIView):
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, account_number):
+
+        transactions = Transaction.objects.filter(
+            account__account_number=account_number
+        )[:10]
+
+        serializer = TransactionSerializer(
+            transactions,
+            many=True
+        )
+
+        return Response(serializer.data)
