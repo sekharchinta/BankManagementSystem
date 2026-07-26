@@ -4,6 +4,9 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
+import { useContext } from "react";
+import { Navigate } from "react-router-dom";
+import { AuthContext } from "./context/AuthContext";
 
 function App() {
 
@@ -33,3 +36,14 @@ function App() {
 }
 
 export default App;
+
+const { isAuthenticated } = useContext(AuthContext);
+
+<Route
+    path="/"
+    element={
+        isAuthenticated
+            ? <Navigate to="/dashboard" replace />
+            : <Login />
+    }
+/>
