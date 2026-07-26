@@ -1,7 +1,7 @@
 from django.urls import path
-
-from .views import DepositView
+from .views import DepositView, WithdrawView
 
 urlpatterns = [
-    path("deposit/", DepositView.as_view(), name="deposit"),
+    path("deposit/", DepositView.as_view()),
+    path("withdraw/", WithdrawView.as_view()),
 ]
