@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from .models import Customer
 from .serializers import CustomerSerializer
 from .services import create_customer
+from rest_framework.filters import SearchFilter
+from rest_framework.filters import OrderingFilter
 
 
 class CustomerViewSet(viewsets.ModelViewSet):
@@ -24,3 +26,9 @@ class CustomerViewSet(viewsets.ModelViewSet):
             response_serializer.data,
             status=status.HTTP_201_CREATED
         )
+    filter_backends=[SearchFilter]
+    
+    search_fields=["full_name","phone","email",]
+    filter_backends=[SearchFilter,OrderingFilter,]
+
+    ordering_fields=["created_at","full_name",]

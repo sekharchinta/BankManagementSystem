@@ -11,7 +11,6 @@ from rest_framework.permissions import AllowAny
 
 
 class AccountViewSet(viewsets.ReadOnlyModelViewSet):
-    permission_classes = [AllowAny]
 
     queryset = Account.objects.select_related("customer").all()
     serializer_class = AccountSerializer
