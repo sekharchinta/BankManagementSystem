@@ -1,58 +1,37 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-
-import ProtectedRoute from "./routes/ProtectedRoute";
-import { useContext } from "react";
-import { Navigate } from "react-router-dom";
-import { AuthContext } from "./context/AuthContext";
+import AppRoutes from "./routes/AppRoutes";
+import { Toaster } from "react-hot-toast";
+import { ThemeProvider } from "./context/ThemeContext";
+import { CustomerAuthProvider } from "./context/CustomerAuthContext";
 
 function App() {
-
-    return (
-        <BrowserRouter>
-
-            <Routes>
-
-                <Route
-                    path="/"
-                    element={<Login />}
-                />
-
-                <Route
-                    path="/dashboard"
-                    element={
-                        <ProtectedRoute>
-                            <Dashboard />
-                        </ProtectedRoute>
-                    }
-                />
-
-            </Routes>
-
-        </BrowserRouter>
-    );
+  return (
+    <ThemeProvider>
+      <CustomerAuthProvider>
+        <AppRoutes />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3500,
+            style: {
+              background: "#1e293b",
+              color: "#f8fafc",
+              borderRadius: "12px",
+              fontSize: "14px",
+              fontFamily: "Inter, sans-serif",
+              padding: "12px 16px",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+            },
+            success: {
+              iconTheme: { primary: "#10b981", secondary: "#fff" },
+            },
+            error: {
+              iconTheme: { primary: "#ef4444", secondary: "#fff" },
+            },
+          }}
+        />
+      </CustomerAuthProvider>
+    </ThemeProvider>
+  );
 }
 
 export default App;
-
-const { isAuthenticated } = useContext(AuthContext);
-
-<Route
-    path="/"
-    element={
-        isAuthenticated
-            ? <Navigate to="/dashboard" replace />
-            : <Login />
-    }
-    path="/accounts"
-    element={
-        <ProtectedRoute>
-
-            <Accounts />
-
-        </ProtectedRoute>
-    }
-
-/>

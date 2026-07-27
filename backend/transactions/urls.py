@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    TransactionListView,
     DepositView,
     WithdrawView,
     TransferView,
@@ -9,6 +10,8 @@ from .views import (
 )
 
 urlpatterns = [
+    path("", TransactionListView.as_view()),
+
     path("deposit/", DepositView.as_view()),
     path("withdraw/", WithdrawView.as_view()),
     path("transfer/", TransferView.as_view()),

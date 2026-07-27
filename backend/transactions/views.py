@@ -7,14 +7,36 @@ from .serializers import DepositSerializer
 from .services import deposit
 from .serializers import DepositSerializer, WithdrawSerializer
 from .services import deposit, withdraw
-from .serializers import TransferSerializer
+from .serializers import TransferSerializer, TransactionSerializer
 from .services import transfer
 from .models import Transaction
-from .serializers import TransactionSerializer
+from rest_framework import generics, filters
+from django_filters.rest_framework import DjangoFilterBackend
+from authentication.permissions import IsTeller
+
+class TransactionListView(generics.ListAPIView):
+    queryset = Transaction.objects.all().order_by("-created_at")
+    serializer_class = TransactionSerializer
+
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
+    ]
+
+    filterset_fields = ["transaction_type"]
+
+    search_fields = [
+        "account__account_number",
+        "description",
+    ]
+
+    ordering_fields = [
+        "created_at",
+        "amount",
+    ]
 
 class DepositView(APIView):
-
-    permission_classes = [AllowAny]
 
     def post(self, request):
 
