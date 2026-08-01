@@ -1,46 +1,60 @@
-import React from "react";
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+
+const ACCENTS = {
+  indigo: { bg: "bg-brand-50", icon: "text-brand-600" },
+  emerald: { bg: "bg-emerald-50", icon: "text-emerald-600" },
+  amber: { bg: "bg-amber-50", icon: "text-amber-600" },
+  sky: { bg: "bg-sky-50", icon: "text-sky-600" },
+  violet: { bg: "bg-violet-50", icon: "text-violet-600" },
+  rose: { bg: "bg-rose-50", icon: "text-rose-600" },
+};
 
 export default function StatCard({
-  title,
+  label,
   value,
-  subtitle,
-  icon,
-  color = "bg-blue-100",
-  iconColor = "text-blue-600",
+  icon: Icon,
+  accent = "indigo",
+  footer,
+  trend,
+  loading = false,
 }) {
+  const accentClasses = ACCENTS[accent] || ACCENTS.indigo;
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-all duration-300">
-
-      <div className="flex items-start justify-between">
-
-        <div>
-
-          <p className="text-sm text-slate-500">
-            {title}
-          </p>
-
-          <h2 className="mt-2 text-3xl font-bold text-slate-800">
-            {value}
-          </h2>
-
-          {subtitle && (
-            <p className="mt-3 text-sm text-slate-500">
-              {subtitle}
+    <div className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[13px] font-medium text-slate-500">{label}</p>
+          {loading ? (
+            <span className="skeleton mt-2 block h-8 w-28" />
+          ) : (
+            <p className="tabular-nums mt-1.5 truncate text-2xl font-bold tracking-tight text-slate-900">
+              {value}
             </p>
           )}
-
         </div>
-
         <div
-          className={`h-14 w-14 rounded-xl flex items-center justify-center ${color}`}
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${accentClasses.bg}`}
         >
-          <div className={iconColor}>
-            {icon}
-          </div>
+          <Icon size={20} className={accentClasses.icon} />
         </div>
-
       </div>
 
+      {(footer || trend) && (
+        <div className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3">
+          {trend && (
+            <span
+              className={`inline-flex items-center gap-0.5 text-xs font-semibold ${
+                trend >= 0 ? "text-emerald-600" : "text-rose-600"
+              }`}
+            >
+              {trend >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+              {Math.abs(trend)}%
+            </span>
+          )}
+          {footer && <span className="text-xs text-slate-400">{footer}</span>}
+        </div>
+      )}
     </div>
   );
 }

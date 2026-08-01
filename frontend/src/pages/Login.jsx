@@ -1,369 +1,393 @@
-import { useState, useEffect } from "react";
-import {
-  Eye, EyeOff, Building2, Shield, User, ArrowRight, Sparkles,
-  CheckCircle, Lock, CreditCard, TrendingUp, Globe, Zap
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Eye, EyeOff, Shield, User, UserPlus, Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { loginUser } from "../services/authService";
-import { useCustomerAuth } from "../context/CustomerAuthContext";
+import { useAuth } from "../context/AuthContext";
+import { getErrorMessage } from "../lib/api";
+import { APP_NAME } from "../lib/constants";
 import toast from "react-hot-toast";
+import Button from "../components/ui/Button";
+import { Field, Input, Select } from "../components/ui/Field";
+import Logo from "../components/ui/Logo";
 
-const FEATURES = [
-  { icon: CreditCard, title: "Digital Banking Cards", desc: "Manage all your accounts with instant balance visibility" },
-  { icon: TrendingUp, title: "Real-time Analytics", desc: "Live charts and financial growth tracking at a glance" },
-  { icon: Lock, title: "Bank-Grade Security", desc: "256-bit SSL encryption with JWT authentication" },
-  { icon: Globe, title: "Instant Transfers", desc: "Send money globally with zero processing delays" },
+const TABS = [
+  { key: "customer", label: "Customer", icon: User, description: "Online banking access" },
+  { key: "staff", label: "Staff", icon: Shield, description: "Secure admin console" },
+  { key: "register", label: "Register", icon: UserPlus, description: "Open a new account" },
 ];
+
+const EMPTY_REGISTER = {
+  full_name: "",
+  email: "",
+  phone: "",
+  date_of_birth: "",
+  address: "",
+  account_type: "Savings",
+  password: "",
+  confirm_password: "",
+};
 
 export default function Login() {
   const navigate = useNavigate();
-  const { loginCustomer } = useCustomerAuth();
+  const { role, loginStaff, loginCustomer, registerCustomer } = useAuth();
 
-  const [activeTab, setActiveTab] = useState("customer");
-  const [staffData, setStaffData] = useState({ username: "", password: "" });
-  const [showStaffPassword, setShowStaffPassword] = useState(false);
-  const [staffLoading, setStaffLoading] = useState(false);
-  const [customerIdentifier, setCustomerIdentifier] = useState("");
-  const [customerCredential, setCustomerCredential] = useState("");
-  const [customerLoading, setCustomerLoading] = useState(false);
+  const [tab, setTab] = useState("customer");
   const [error, setError] = useState("");
-  const [currentFeature, setCurrentFeature] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const [identifier, setIdentifier] = useState("");
+  const [credential, setCredential] = useState("");
+
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [registerForm, setRegisterForm] = useState(EMPTY_REGISTER);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentFeature(f => (f + 1) % FEATURES.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+    if (role === "STAFF") navigate("/dashboard", { replace: true });
+    else if (role === "CUSTOMER") navigate("/customer", { replace: true });
+  }, [role, navigate]);
 
-  const handleStaffLogin = async (e) => {
+  const handleCustomer = async (e) => {
     e.preventDefault();
-    setStaffLoading(true);
+    if (!identifier.trim()) {
+      setError("Please enter your account number or registered email.");
+      return;
+    }
     setError("");
+    setLoading(true);
     try {
-      const data = await loginUser(staffData);
-      localStorage.setItem("access", data.access);
-      localStorage.setItem("refresh", data.refresh);
-      localStorage.setItem("user_role", "STAFF");
-      toast.success("Welcome to Staff Portal!");
-      navigate("/dashboard");
+      const data = await loginCustomer(identifier.trim(), credential.trim());
+      toast.success(`Welcome, ${data.customer?.full_name || "Customer"}!`);
+      navigate("/customer", { replace: true });
     } catch (err) {
-      setError(err.response?.data?.detail || "Invalid credentials. Please try again.");
+      setError(getErrorMessage(err, "Login failed. Please check your credentials."));
     } finally {
-      setStaffLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleCustomerLogin = async (e) => {
+  const handleStaff = async (e) => {
     e.preventDefault();
-    if (!customerIdentifier.trim()) { setError("Account Number or Email is required."); return; }
-    setCustomerLoading(true);
     setError("");
-    const res = await loginCustomer(customerIdentifier.trim(), customerCredential.trim());
-    if (res.success) {
-      toast.success(`Welcome, ${res.data.customer?.full_name || "Customer"}!`);
-      navigate("/customer/dashboard");
-    } else {
-      setError(res.error);
-    }
-    setCustomerLoading(false);
-  };
-
-  const handleDemoCustomerLogin = async () => {
-    setCustomerIdentifier("SB100000001");
-    setCustomerCredential("123456");
-    setCustomerLoading(true);
-    setError("");
-    const res = await loginCustomer("SB100000001", "123456");
-    if (res.success) {
-      toast.success("Demo Customer Login Successful!");
-      navigate("/customer/dashboard");
-    } else { setError(res.error); }
-    setCustomerLoading(false);
-  };
-
-  const handleDemoStaffLogin = async () => {
-    setStaffData({ username: "admin", password: "admin123" });
-    setStaffLoading(true);
-    setError("");
+    setLoading(true);
     try {
-      const data = await loginUser({ username: "admin", password: "admin123" });
-      localStorage.setItem("access", data.access);
-      localStorage.setItem("refresh", data.refresh);
-      localStorage.setItem("user_role", "STAFF");
-      toast.success("Demo Staff Login Successful!");
-      navigate("/dashboard");
+      await loginStaff({ username, password });
+      toast.success("Welcome back!");
+      navigate("/dashboard", { replace: true });
     } catch (err) {
-      setError(err.response?.data?.detail || "Demo staff login failed.");
+      setError(getErrorMessage(err, "Invalid username or password."));
     } finally {
-      setStaffLoading(false);
+      setLoading(false);
     }
   };
 
-  const feat = FEATURES[currentFeature];
-  const FeatIcon = feat.icon;
+  const setRegister = (key) => (e) => {
+    const value = e.target.value;
+    setRegisterForm((f) => ({ ...f, [key]: value }));
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    const f = registerForm;
+    if (!f.full_name.trim() || !f.email.trim() || !f.phone.trim() || !f.address.trim()) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email.trim())) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    if (f.password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+    if (f.password !== f.confirm_password) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await registerCustomer({
+        full_name: f.full_name.trim(),
+        email: f.email.trim(),
+        phone: f.phone.trim(),
+        date_of_birth: f.date_of_birth || null,
+        address: f.address.trim(),
+        account_type: f.account_type,
+        password: f.password,
+      });
+      toast.success(
+        `Account opened, ${data.customer?.full_name || ""}! Your account number is ${
+          data.primary_account?.account_number || data.accounts?.[0]?.account_number || ""
+        }.`
+      );
+      navigate("/customer", { replace: true });
+    } catch (err) {
+      setError(getErrorMessage(err, "Registration failed. Please try again."));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen flex" style={{ background: "linear-gradient(-45deg,#060d1a,#0f172a,#1e1b4b,#0a1628)", backgroundSize: "400% 400%", animation: "gradient-shift 12s ease infinite" }}>
-
-      {/* ── LEFT PANEL ─────────────────────────── */}
-      <div className="hidden lg:flex flex-col w-[52%] relative overflow-hidden">
-        {/* Decorative blobs */}
-        <div className="absolute top-[-120px] left-[-120px] w-[400px] h-[400px] rounded-full opacity-[0.12]" style={{ background: "radial-gradient(circle, #6366f1, transparent)" }} />
-        <div className="absolute bottom-[-80px] right-[-80px] w-[350px] h-[350px] rounded-full opacity-[0.10]" style={{ background: "radial-gradient(circle, #8b5cf6, transparent)" }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-[0.04]" style={{ background: "radial-gradient(circle, #a855f7, transparent)" }} />
-
-        {/* Content */}
-        <div className="relative z-10 flex flex-col h-full p-12">
-          {/* Logo */}
-          <div className="flex items-center gap-3 mb-auto">
-            <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)", boxShadow: "0 8px 24px rgba(99,102,241,0.4)" }}>
-              <Building2 size={22} className="text-white" />
-            </div>
-            <div>
-              <p className="text-white font-black text-xl tracking-tight">APEX BANK</p>
-              <p className="text-indigo-400 text-[10px] font-bold uppercase tracking-widest">Financial Management</p>
-            </div>
-          </div>
-
-          {/* Hero Content */}
-          <div className="my-auto space-y-10">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-white/8 backdrop-blur-sm border border-white/10 rounded-full px-4 py-1.5 mb-5">
-                <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                <span className="text-indigo-300 text-xs font-semibold">Next-Generation Banking Platform</span>
-              </div>
-              <h1 className="text-5xl font-black text-white leading-[1.1] tracking-tight">
-                Banking,<br />
-                <span style={{ background: "linear-gradient(135deg,#818cf8,#c084fc)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                  Reimagined.
-                </span>
-              </h1>
-              <p className="text-slate-400 mt-4 text-base leading-relaxed max-w-md">
-                Complete banking management with real-time analytics, instant transfers, and enterprise-grade security — all in one platform.
-              </p>
-            </div>
-
-            {/* Animated Feature Rotator */}
-            <div className="relative h-28 overflow-hidden">
-              <div key={currentFeature} className="fade-up flex items-start gap-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(99,102,241,0.2)", border: "1px solid rgba(99,102,241,0.3)" }}>
-                  <FeatIcon className="h-6 w-6 text-indigo-400" />
-                </div>
-                <div>
-                  <p className="text-white font-bold text-sm">{feat.title}</p>
-                  <p className="text-slate-400 text-xs mt-1 leading-relaxed">{feat.desc}</p>
-                </div>
-              </div>
-              {/* Dots */}
-              <div className="flex gap-1.5 mt-4 justify-center">
-                {FEATURES.map((_, i) => (
-                  <div key={i} className={`h-1 rounded-full transition-all duration-500 ${i === currentFeature ? "w-6 bg-indigo-500" : "w-1.5 bg-white/20"}`} />
-                ))}
-              </div>
-            </div>
-
-            {/* Stats Row */}
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { val: "99.9%", label: "Uptime SLA" },
-                { val: "256-bit", label: "SSL Encrypted" },
-                { val: "< 1s", label: "Transfer Speed" },
-              ].map(({ val, label }) => (
-                <div key={label} className="text-center bg-white/5 rounded-xl p-3 border border-white/8">
-                  <p className="text-white font-black text-lg">{val}</p>
-                  <p className="text-slate-500 text-[10px] font-medium uppercase tracking-wide mt-0.5">{label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <p className="text-slate-600 text-xs">© 2026 Apex Bank Systems · All rights reserved</p>
-        </div>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-10">
+      {/* Decorative background */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-40 -top-40 h-[480px] w-[480px] rounded-full bg-brand-600/20 blur-[120px]" />
+        <div className="absolute -bottom-40 -right-40 h-[480px] w-[480px] rounded-full bg-violet-600/20 blur-[120px]" />
+        <div className="absolute left-1/2 top-0 h-[300px] w-[700px] -translate-x-1/2 rounded-full bg-sky-600/10 blur-[100px]" />
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
+            backgroundSize: "56px 56px",
+          }}
+        />
       </div>
 
-      {/* ── RIGHT PANEL ────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
-        <div className="w-full max-w-[420px] scale-in">
+      <div className="relative z-10 w-full max-w-md">
+        {/* Brand */}
+        <div className="mb-8 flex flex-col items-center">
+          <Logo size="lg" />
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-white">{APP_NAME}</h1>
+          <p className="mt-1 text-sm text-slate-400">Bank Management System</p>
+        </div>
 
-          {/* Mobile Logo */}
-          <div className="flex items-center gap-2.5 mb-6 lg:hidden">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#6366f1,#8b5cf6)" }}>
-              <Building2 size={18} className="text-white" />
-            </div>
-            <span className="text-white font-black text-lg">APEX BANK</span>
+        <div className="animate-slide-up overflow-hidden rounded-2xl border border-white/10 bg-white shadow-2xl">
+          {/* Tab switcher */}
+          <div className="grid grid-cols-3 gap-1 p-2">
+            {TABS.map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  setTab(key);
+                  setError("");
+                }}
+                className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-colors ${
+                  tab === key
+                    ? "bg-brand-600 text-white shadow-sm"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                }`}
+              >
+                <Icon size={15} />
+                {label}
+              </button>
+            ))}
           </div>
 
-          {/* Card */}
-          <div style={{ background: "rgba(255,255,255,0.97)", backdropFilter: "blur(20px)", borderRadius: "24px", boxShadow: "0 32px 80px rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.5)" }}>
-
-            {/* Tab Switcher */}
-            <div className="p-6 pb-0">
-              <div className="grid grid-cols-2 gap-1 p-1 rounded-xl" style={{ background: "#f1f5f9" }}>
-                {[
-                  { key: "customer", label: "Customer Portal", icon: User },
-                  { key: "staff", label: "Staff Portal", icon: Shield },
-                ].map(({ key, label, icon: Icon }) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => { setActiveTab(key); setError(""); }}
-                    className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold transition-all"
-                    style={activeTab === key ? {
-                      background: "#fff",
-                      color: "#4f46e5",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.10)"
-                    } : { color: "#64748b" }}
-                  >
-                    <Icon size={14} />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="p-6 space-y-5">
-              {/* Header */}
-              <div>
-                <h2 className="text-xl font-black text-slate-900">
-                  {activeTab === "customer" ? "Online Banking" : "Staff Administration"}
-                </h2>
-                <p className="text-slate-500 text-xs mt-0.5">
-                  {activeTab === "customer"
-                    ? "Sign in with your account number or registered email"
-                    : "Authorized personnel only — restricted access"}
-                </p>
-              </div>
-
-              {/* Error */}
-              {error && (
-                <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-xl fade-in">
-                  <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
-                  {error}
+          <div className="p-6">
+            {tab === "customer" ? (
+              <form onSubmit={handleCustomer} className="space-y-4">
+                <div className="mb-1 flex items-center gap-2 text-slate-400">
+                  <Building2 size={14} />
+                  <span className="text-xs">Sign in to your banking account</span>
                 </div>
-              )}
 
-              {/* ── CUSTOMER FORM ── */}
-              {activeTab === "customer" ? (
-                <form onSubmit={handleCustomerLogin} className="space-y-4">
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                      Account Number or Email
-                    </label>
-                    <input
-                      type="text"
-                      value={customerIdentifier}
-                      onChange={e => setCustomerIdentifier(e.target.value)}
-                      placeholder="e.g. SB100000001 or name@email.com"
-                      className="input-field"
-                      required
+                <Field label="Account number or email" required>
+                  <Input
+                    type="text"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="e.g. SB100000001 or name@email.com"
+                    autoComplete="username"
+                  />
+                </Field>
+
+                <Field
+                  label="Password"
+                  hint='Your password, or your registered phone/email for older accounts'
+                >
+                  <Input
+                    type="password"
+                    value={credential}
+                    onChange={(e) => setCredential(e.target.value)}
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                  />
+                </Field>
+
+                {error && (
+                  <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-medium text-rose-700">
+                    {error}
+                  </p>
+                )}
+
+                <Button type="submit" size="lg" className="w-full" loading={loading}>
+                  Access Account
+                </Button>
+              </form>
+            ) : tab === "staff" ? (
+              <form onSubmit={handleStaff} className="space-y-4">
+                <div className="mb-1 flex items-center gap-2 text-slate-400">
+                  <Shield size={14} />
+                  <span className="text-xs">Restricted — authorized personnel only</span>
+                </div>
+
+                <Field label="Username" required>
+                  <Input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="e.g. admin"
+                    autoComplete="username"
+                  />
+                </Field>
+
+                <Field label="Password" required>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      className="pr-10"
+                      autoComplete="current-password"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      aria-label="Toggle password visibility"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                      Phone Number / Access PIN
-                    </label>
-                    <input
-                      type="password"
-                      value={customerCredential}
-                      onChange={e => setCustomerCredential(e.target.value)}
-                      placeholder="Your registered phone or PIN (e.g. 123456)"
-                      className="input-field"
+                </Field>
+
+                {error && (
+                  <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-medium text-rose-700">
+                    {error}
+                  </p>
+                )}
+
+                <Button type="submit" size="lg" className="w-full" loading={loading}>
+                  Sign in to Staff Portal
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div className="mb-1 flex items-center gap-2 text-slate-400">
+                  <UserPlus size={14} />
+                  <span className="text-xs">Open a new savings or current account</span>
+                </div>
+
+                <Field label="Full name" required>
+                  <Input
+                    type="text"
+                    value={registerForm.full_name}
+                    onChange={setRegister("full_name")}
+                    placeholder="e.g. John Doe"
+                    autoComplete="name"
+                  />
+                </Field>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Email" required>
+                    <Input
+                      type="email"
+                      value={registerForm.email}
+                      onChange={setRegister("email")}
+                      placeholder="name@email.com"
+                      autoComplete="email"
                     />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={customerLoading}
-                    className="w-full flex items-center justify-center gap-2 text-white font-bold py-3 rounded-xl text-sm transition-all disabled:opacity-60"
-                    style={{ background: "linear-gradient(135deg,#4f46e5,#7c3aed)", boxShadow: "0 4px 14px rgba(79,70,229,0.4)" }}
-                  >
-                    {customerLoading ? (
-                      <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Authenticating...</span>
-                    ) : (<>Access Account Dashboard <ArrowRight size={15} /></>)}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDemoCustomerLogin}
-                    className="w-full py-2.5 text-xs font-bold text-indigo-600 rounded-xl border border-indigo-200 hover:bg-indigo-50 transition flex items-center justify-center gap-1.5"
-                    style={{ background: "#eef2ff" }}
-                  >
-                    <Sparkles size={13} className="text-amber-500" />
-                    Quick Demo Login (SB100000001)
-                  </button>
-                </form>
-              ) : (
-                /* ── STAFF FORM ── */
-                <form onSubmit={handleStaffLogin} className="space-y-4">
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                      Staff Username
-                    </label>
-                    <input
-                      type="text"
-                      value={staffData.username}
-                      onChange={e => setStaffData(p => ({ ...p, username: e.target.value }))}
-                      placeholder="e.g. admin"
-                      className="input-field"
-                      required
+                  </Field>
+                  <Field label="Phone" required>
+                    <Input
+                      type="tel"
+                      value={registerForm.phone}
+                      onChange={setRegister("phone")}
+                      placeholder="e.g. 9876543210"
+                      autoComplete="tel"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                      Password
-                    </label>
+                  </Field>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Date of birth">
+                    <Input
+                      type="date"
+                      value={registerForm.date_of_birth}
+                      onChange={setRegister("date_of_birth")}
+                    />
+                  </Field>
+                  <Field label="Account type" required>
+                    <Select
+                      value={registerForm.account_type}
+                      onChange={setRegister("account_type")}
+                    >
+                      <option value="Savings">Savings</option>
+                      <option value="Current">Current</option>
+                    </Select>
+                  </Field>
+                </div>
+
+                <Field label="Address" required>
+                  <Input
+                    type="text"
+                    value={registerForm.address}
+                    onChange={setRegister("address")}
+                    placeholder="Street, city, state"
+                    autoComplete="street-address"
+                  />
+                </Field>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Password" required hint="Minimum 8 characters">
                     <div className="relative">
-                      <input
-                        type={showStaffPassword ? "text" : "password"}
-                        value={staffData.password}
-                        onChange={e => setStaffData(p => ({ ...p, password: e.target.value }))}
-                        placeholder="Enter staff password"
-                        className="input-field pr-10"
-                        required
+                      <Input
+                        type={showRegisterPassword ? "text" : "password"}
+                        value={registerForm.password}
+                        onChange={setRegister("password")}
+                        placeholder="Create a password"
+                        className="pr-10"
+                        autoComplete="new-password"
                       />
                       <button
                         type="button"
-                        onClick={() => setShowStaffPassword(!showStaffPassword)}
+                        onClick={() => setShowRegisterPassword((s) => !s)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        aria-label="Toggle password visibility"
                       >
-                        {showStaffPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        {showRegisterPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={staffLoading}
-                    className="w-full flex items-center justify-center gap-2 text-white font-bold py-3 rounded-xl text-sm transition-all disabled:opacity-60"
-                    style={{ background: "linear-gradient(135deg,#4f46e5,#7c3aed)", boxShadow: "0 4px 14px rgba(79,70,229,0.4)" }}
-                  >
-                    {staffLoading ? (
-                      <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Authenticating...</span>
-                    ) : (<>Sign In to Staff Portal <ArrowRight size={15} /></>)}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDemoStaffLogin}
-                    className="w-full py-2.5 text-xs font-bold text-slate-600 rounded-xl border border-slate-200 hover:bg-slate-50 transition flex items-center justify-center gap-1.5"
-                    style={{ background: "#f8fafc" }}
-                  >
-                    <Shield size={13} className="text-indigo-500" />
-                    Quick Demo Staff Login (Admin)
-                  </button>
-                </form>
-              )}
+                  </Field>
+                  <Field label="Confirm password" required>
+                    <Input
+                      type={showRegisterPassword ? "text" : "password"}
+                      value={registerForm.confirm_password}
+                      onChange={setRegister("confirm_password")}
+                      placeholder="Repeat password"
+                      autoComplete="new-password"
+                    />
+                  </Field>
+                </div>
 
-              {/* Trust indicators */}
-              <div className="flex items-center justify-center gap-4 pt-2 border-t border-slate-100">
-                {[
-                  { icon: CheckCircle, label: "Secure Login" },
-                  { icon: Lock, label: "256-bit SSL" },
-                  { icon: Zap, label: "Instant Access" },
-                ].map(({ icon: Icon, label }) => (
-                  <div key={label} className="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
-                    <Icon size={11} className="text-emerald-500" />
-                    {label}
-                  </div>
-                ))}
-              </div>
+                {error && (
+                  <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-medium text-rose-700">
+                    {error}
+                  </p>
+                )}
+
+                <Button type="submit" size="lg" className="w-full" loading={loading}>
+                  Create Account
+                </Button>
+              </form>
+            )}
+
+            <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4 text-[11px] text-slate-400">
+              <span>Secure JWT authentication</span>
+              <span className="flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                All systems operational
+              </span>
             </div>
           </div>
         </div>

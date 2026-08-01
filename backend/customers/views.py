@@ -5,6 +5,8 @@ from rest_framework.views import APIView
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from authentication.models import Profile
 
 from .models import Customer
@@ -13,7 +15,37 @@ from transactions.models import Transaction
 from transactions.serializers import TransactionSerializer
 from transactions.services import transfer, deposit
 from .serializers import CustomerSerializer
-from .services import create_customer
+from .services import create_customer, register_customer
+
+
+def _build_customer_auth_response(customer, user):
+    refresh = RefreshToken.for_user(user)
+
+    accounts_data = []
+    for acc in customer.accounts.all():
+        accounts_data.append({
+            "account_number": acc.account_number,
+            "account_type": acc.account_type,
+            "balance": float(acc.balance),
+            "status": acc.status,
+            "created_at": acc.created_at,
+        })
+
+    return {
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+        "role": "CUSTOMER",
+        "customer": {
+            "id": customer.id,
+            "full_name": customer.full_name,
+            "email": customer.email,
+            "phone": customer.phone,
+            "address": customer.address,
+            "date_of_birth": customer.date_of_birth,
+        },
+        "primary_account": accounts_data[0] if accounts_data else None,
+        "accounts": accounts_data,
+    }
 
 
 class CustomerViewSet(viewsets.ModelViewSet):
@@ -58,13 +90,6 @@ class CustomerLoginView(APIView):
         if not customer:
             return Response({"error": "No customer found with the provided Account Number or Email"}, status=404)
 
-        # Verification check: If credential provided, match with customer phone or email or allow demo login
-        if credential:
-            if (credential.lower() != customer.phone.lower() and 
-                credential.lower() != customer.email.lower() and 
-                credential != "123456" and credential != "demo"):
-                return Response({"error": "Invalid Phone Number or Access Credential"}, status=400)
-
         # Ensure Django User exists for this customer
         username = f"customer_{customer.id}"
         user, created = User.objects.get_or_create(
@@ -78,33 +103,42 @@ class CustomerLoginView(APIView):
         if created or not hasattr(user, "profile"):
             Profile.objects.get_or_create(user=user, defaults={"role": Profile.CUSTOMER})
 
-        refresh = RefreshToken.for_user(user)
+        # Verification check
+        if credential:
+            if user.has_usable_password():
+                # Registered user with a password -> verify password
+                if not user.check_password(credential):
+                    return Response({"error": "Invalid Password or Access Credential"}, status=400)
+            else:
+                # Legacy customers without a set password -> match phone or email
+                if (credential.lower() != customer.phone.lower() and
+                        credential.lower() != customer.email.lower()):
+                    return Response({"error": "Invalid Phone Number or Access Credential"}, status=400)
 
-        accounts_data = []
-        for acc in customer.accounts.all():
-            accounts_data.append({
-                "account_number": acc.account_number,
-                "account_type": acc.account_type,
-                "balance": float(acc.balance),
-                "status": acc.status,
-                "created_at": acc.created_at
-            })
+        return Response(_build_customer_auth_response(customer, user))
 
-        return Response({
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
-            "role": "CUSTOMER",
-            "customer": {
-                "id": customer.id,
-                "full_name": customer.full_name,
-                "email": customer.email,
-                "phone": customer.phone,
-                "address": customer.address,
-                "date_of_birth": customer.date_of_birth,
-            },
-            "primary_account": accounts_data[0] if accounts_data else None,
-            "accounts": accounts_data
-        })
+
+class CustomerRegisterView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = CustomerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        password = str(request.data.get("password", ""))
+        if len(password) < 8:
+            return Response({"error": "Password must be at least 8 characters long."}, status=400)
+        try:
+            validate_password(password)
+        except ValidationError as exc:
+            return Response({"error": exc.messages[0]}, status=400)
+
+        customer, user = register_customer(dict(serializer.validated_data), password)
+
+        return Response(
+            _build_customer_auth_response(customer, user),
+            status=status.HTTP_201_CREATED
+        )
 
 
 class CustomerMeView(APIView):

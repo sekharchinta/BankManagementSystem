@@ -1,235 +1,168 @@
 import { useState } from "react";
-import { useCustomerAuth } from "../../context/CustomerAuthContext";
-import { customerTransferApi } from "../../services/customerService";
-import TransactionModal from "../../components/common/TransactionModal";
-import { Send, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck, DollarSign } from "lucide-react";
+import { CheckCircle2, ArrowLeftRight } from "lucide-react";
 import toast from "react-hot-toast";
+import PageHeader from "../../components/ui/PageHeader";
+import Card from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
+import { Field, Input, Textarea } from "../../components/ui/Field";
+import { useAuth } from "../../context/AuthContext";
+import { customerTransfer } from "../../services/customers";
+import { getErrorMessage } from "../../lib/api";
+import { formatAccountNumber, formatCurrency } from "../../lib/format";
 
 export default function CustomerTransfer() {
-  const { activeAccount, accounts, setActiveAccount, refreshCustomerData } = useCustomerAuth();
-  
-  const [receiverAccount, setReceiverAccount] = useState("");
+  const { activeAccount, refreshCustomer } = useAuth();
+  const [receiver, setReceiver] = useState("");
   const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("Online Transfer");
+  const [note, setNote] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [recentReceipt, setRecentReceipt] = useState(null);
+  const [result, setResult] = useState(null);
 
-  const presetAmounts = [50, 100, 250, 500, 1000];
-
-  const handleTransfer = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    const value = Number(amount);
 
-    if (!activeAccount?.account_number) {
-      toast.error("Please select a valid sender account.");
+    if (!receiver.trim()) {
+      setError("Enter the receiver's account number.");
+      return;
+    }
+    if (!amount || !Number.isFinite(value) || value <= 0) {
+      setError("Enter a valid amount greater than zero.");
+      return;
+    }
+    if (receiver.trim().toUpperCase() === activeAccount.account_number) {
+      setError("You cannot transfer to your own account.");
+      return;
+    }
+    if (value > Number(activeAccount.balance || 0)) {
+      setError("Insufficient balance for this transfer.");
       return;
     }
 
-    if (!receiverAccount.trim()) {
-      toast.error("Please enter a valid recipient account number.");
-      return;
-    }
-
-    if (receiverAccount.trim().toUpperCase() === activeAccount.account_number.toUpperCase()) {
-      toast.error("You cannot transfer money to the same account.");
-      return;
-    }
-
-    const numAmount = parseFloat(amount);
-    if (!numAmount || numAmount <= 0) {
-      toast.error("Please enter a valid amount greater than $0.");
-      return;
-    }
-
-    if (numAmount > parseFloat(activeAccount.balance)) {
-      toast.error("Insufficient account balance for this transfer.");
-      return;
-    }
-
+    setError("");
     setLoading(true);
     try {
-      const res = await customerTransferApi({
+      const res = await customerTransfer({
         sender_account_number: activeAccount.account_number,
-        receiver_account_number: receiverAccount.trim(),
-        amount: numAmount,
-        description: description.trim() || "Customer Money Transfer",
+        receiver_account_number: receiver.trim().toUpperCase(),
+        amount: value,
+        description: note.trim(),
       });
-
-      toast.success("Transfer Completed Successfully!");
-      
-      // Update customer local context data
-      await refreshCustomerData();
-
-      // Show receipt modal
-      if (res.transaction) {
-        setRecentReceipt(res.transaction);
-      } else {
-        setRecentReceipt({
-          id: Math.floor(100000 + Math.random() * 900000),
-          transaction_type: "TRANSFER",
-          account_number: activeAccount.account_number,
-          amount: numAmount,
-          balance_after: res.sender?.balance || (parseFloat(activeAccount.balance) - numAmount),
-          description: `Transfer to ${receiverAccount.trim()}`,
-          created_at: new Date().toISOString(),
-        });
-      }
-
-      // Reset form fields
-      setReceiverAccount("");
+      setResult(res);
+      setReceiver("");
       setAmount("");
-      setDescription("Online Transfer");
+      setNote("");
+      toast.success("Transfer successful");
+      refreshCustomer();
     } catch (err) {
-      const errorMsg = err.response?.data?.error || "Transfer failed. Please check recipient account.";
-      toast.error(errorMsg);
+      const message = getErrorMessage(err, "Transfer failed.");
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      
-      {/* Title Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Send className="h-6 w-6 text-indigo-600 dark:text-indigo-400" /> Send Money & Transfers
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Transfer money instantly to any Apex Bank account with zero processing fees.
-          </p>
-        </div>
-        <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1.5 rounded-full font-semibold">
-          <ShieldCheck className="h-4 w-4" /> Instant Settlement
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Transfer Money"
+        subtitle="Send funds to another account"
+      />
 
-      {/* Transfer Form Card */}
-      <div className="rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-        <form onSubmit={handleTransfer} className="space-y-5">
-          
-          {/* Sender Account Selector */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-              From Account (Sender)
-            </label>
-            <select
-              value={activeAccount?.account_number || ""}
-              onChange={(e) => {
-                const selected = accounts.find((a) => a.account_number === e.target.value);
-                if (selected) setActiveAccount(selected);
-              }}
-              className="w-full rounded-xl border border-slate-300 bg-slate-50 p-3 text-sm font-semibold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
-            >
-              {accounts.map((acc) => (
-                <option key={acc.account_number} value={acc.account_number}>
-                  {acc.account_number} ({acc.account_type}) - Balance: ${Number(acc.balance).toFixed(2)}
-                </option>
-              ))}
-            </select>
-            <div className="mt-2 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-              <span>Available Balance:</span>
-              <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                ${Number(activeAccount?.balance || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-              </span>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        <Card className="lg:col-span-3">
+          <div className="mb-6 flex items-center justify-between rounded-xl bg-brand-50 px-4 py-3">
+            <div>
+              <p className="text-[11px] font-medium text-brand-700">Transferring from</p>
+              <p className="font-mono mt-0.5 text-xs font-semibold text-brand-900">
+                {formatAccountNumber(activeAccount?.account_number)}
+              </p>
             </div>
-          </div>
-
-          {/* Recipient Account Input */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-              To Account Number (Recipient)
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="e.g. SB100000002"
-                value={receiverAccount}
-                onChange={(e) => setReceiverAccount(e.target.value.toUpperCase())}
-                required
-                className="w-full rounded-xl border border-slate-300 bg-white p-3 font-mono font-bold uppercase text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
-              />
-            </div>
-            <p className="mt-1 text-[11px] text-slate-400">
-              Enter the recipient's 11-digit bank account number.
+            <p className="tabular-nums text-lg font-bold text-brand-700">
+              {formatCurrency(activeAccount?.balance)}
             </p>
           </div>
 
-          {/* Transfer Amount Input */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-              Transfer Amount ($ USD)
-            </label>
-            <div className="relative">
-              <div className="absolute left-3.5 top-3 text-slate-400">
-                <DollarSign className="h-5 w-5" />
-              </div>
-              <input
-                type="number"
-                step="0.01"
-                min="1"
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                required
-                className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-10 pr-4 font-mono text-xl font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
-              />
-            </div>
-
-            {/* Quick Amount Selectors */}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <span className="text-xs text-slate-400 self-center mr-1 font-medium">Quick Select:</span>
-              {presetAmounts.map((preset) => (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => setAmount(preset.toString())}
-                  className="rounded-lg border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700 hover:bg-indigo-600 hover:text-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 transition"
-                >
-                  +${preset}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Remark / Note Input */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-              Payment Remark / Description
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Rent Payment, Project Fee, Gift"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 outline-none"
-            />
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 py-3.5 text-sm font-bold text-white shadow-lg transition hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50"
-          >
-            {loading ? (
-              <span>Processing Transfer...</span>
-            ) : (
-              <>
-                <span>Execute Transfer Now</span>
-                <ArrowRight className="h-4 w-4" />
-              </>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-medium text-rose-700">
+                {error}
+              </p>
             )}
-          </button>
-        </form>
-      </div>
 
-      {/* Transaction Receipt Modal */}
-      <TransactionModal
-        transaction={recentReceipt}
-        isOpen={!!recentReceipt}
-        onClose={() => setRecentReceipt(null)}
-      />
+            <Field label="Receiver account number" required hint="e.g. SB100000002">
+              <Input
+                type="text"
+                value={receiver}
+                onChange={(e) => { setReceiver(e.target.value); setError(""); }}
+                placeholder="Enter account number"
+                className="font-mono text-sm uppercase"
+              />
+            </Field>
+
+            <Field label="Amount" required>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">
+                  ₹
+                </span>
+                <Input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => { setAmount(e.target.value); setError(""); }}
+                  placeholder="0.00"
+                  className="pl-8 text-base font-semibold tabular-nums"
+                />
+              </div>
+            </Field>
+
+            <Field label="Description" hint="Optional note shown to the receiver">
+              <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="e.g. Rent payment" />
+            </Field>
+
+            <Button type="submit" size="lg" className="w-full" icon={ArrowLeftRight} loading={loading}>
+              Transfer Funds
+            </Button>
+          </form>
+        </Card>
+
+        <div className="lg:col-span-2">
+          {result ? (
+            <div className="animate-slide-up rounded-xl border border-emerald-200 bg-emerald-50 p-6">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 size={22} className="mt-0.5 shrink-0 text-emerald-600" />
+                <div>
+                  <p className="text-sm font-semibold text-emerald-900">
+                    {result.message || "Transfer successful"}
+                  </p>
+                  <div className="mt-3 space-y-2 text-xs text-emerald-800">
+                    <p className="flex justify-between">
+                      <span>To</span>
+                      <span className="font-mono font-semibold">{result.receiver?.account_number || "—"}</span>
+                    </p>
+                    <p className="flex justify-between">
+                      <span>Sender balance</span>
+                      <span className="font-semibold">{formatCurrency(result.sender?.balance)}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <Card title="Before you send" subtitle="Please double-check">
+              <ul className="space-y-2 text-xs text-slate-500">
+                <li>Account numbers are case-insensitive.</li>
+                <li>Transfers are processed instantly.</li>
+                <li>Ensure the receiver's account number is correct — it cannot be reversed.</li>
+                <li>Your available balance after transfer is shown in the summary.</li>
+              </ul>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

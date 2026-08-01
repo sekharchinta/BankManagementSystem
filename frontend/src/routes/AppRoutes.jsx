@@ -1,106 +1,84 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-import Layout from "../components/layout/Layout";
+import StaffRoute from "../components/routes/StaffRoute";
+import CustomerRoute from "../components/routes/CustomerRoute";
+import StaffLayout from "../components/layout/StaffLayout";
 import CustomerLayout from "../components/layout/CustomerLayout";
-import PrivateRoute from "../components/common/PrivateRoute";
-import CustomerPrivateRoute from "../components/common/CustomerPrivateRoute";
+import Spinner from "../components/ui/Spinner";
 
-import Login from "../pages/Login";
-import Dashboard from "../pages/Dashboard";
-import Customers from "../pages/Customers";
-import Accounts from "../pages/Accounts";
-import Deposit from "../pages/Deposit";
-import Withdraw from "../pages/Withdraw";
-import Transfer from "../pages/Transfer";
-import Transactions from "../pages/Transactions";
-import NotFound from "../pages/NotFound";
+const Login = lazy(() => import("../pages/Login"));
+const NotFound = lazy(() => import("../pages/NotFound"));
 
-// Customer Pages
-import CustomerDashboard from "../pages/customer/CustomerDashboard";
-import CustomerTransfer from "../pages/customer/CustomerTransfer";
-import CustomerDeposit from "../pages/customer/CustomerDeposit";
-import CustomerTransactions from "../pages/customer/CustomerTransactions";
-import CustomerProfile from "../pages/customer/CustomerProfile";
+const Dashboard = lazy(() => import("../pages/staff/Dashboard"));
+const Customers = lazy(() => import("../pages/staff/Customers"));
+const Accounts = lazy(() => import("../pages/staff/Accounts"));
+const Users = lazy(() => import("../pages/staff/Users"));
+const Transactions = lazy(() => import("../pages/staff/Transactions"));
+const Deposit = lazy(() => import("../pages/staff/Deposit"));
+const Withdraw = lazy(() => import("../pages/staff/Withdraw"));
+const Transfer = lazy(() => import("../pages/staff/Transfer"));
+const Reports = lazy(() => import("../pages/staff/Reports"));
+const Profile = lazy(() => import("../pages/staff/Profile"));
 
-function StaffProtectedLayout({ children }) {
+const CustomerDashboard = lazy(() => import("../pages/customer/CustomerDashboard"));
+const CustomerDeposit = lazy(() => import("../pages/customer/CustomerDeposit"));
+const CustomerTransfer = lazy(() => import("../pages/customer/CustomerTransfer"));
+const CustomerTransactions = lazy(() => import("../pages/customer/CustomerTransactions"));
+const CustomerProfile = lazy(() => import("../pages/customer/CustomerProfile"));
+
+function PageFallback() {
   return (
-    <PrivateRoute>
-      <Layout>{children}</Layout>
-    </PrivateRoute>
+    <div className="flex min-h-[50vh] items-center justify-center">
+      <Spinner size={28} />
+    </div>
   );
 }
 
-function CustomerProtectedLayout({ children }) {
-  return (
-    <CustomerPrivateRoute>
-      <CustomerLayout>{children}</CustomerLayout>
-    </CustomerPrivateRoute>
-  );
+function HomeRedirect() {
+  const { isStaff, isCustomer } = useAuth();
+  if (isStaff) return <Navigate to="/dashboard" replace />;
+  if (isCustomer) return <Navigate to="/customer" replace />;
+  return <Navigate to="/login" replace />;
 }
 
 export default function AppRoutes() {
   return (
-    <Routes>
-      {/* Public */}
-      <Route path="/login" element={<Login />} />
+    <Suspense fallback={<PageFallback />}>
+      <Routes>
+        <Route path="/" element={<HomeRedirect />} />
+        <Route path="/login" element={<Login />} />
 
-      {/* Root redirect */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+        {/* Staff portal */}
+        <Route element={<StaffRoute />}>
+          <Route element={<StaffLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/customers" element={<Customers />} />
+            <Route path="/accounts" element={<Accounts />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/transactions" element={<Transactions />} />
+            <Route path="/deposit" element={<Deposit />} />
+            <Route path="/withdraw" element={<Withdraw />} />
+            <Route path="/transfer" element={<Transfer />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/profile" element={<Profile />} />
+          </Route>
+        </Route>
 
-      {/* Staff Portal Protected Routes */}
-      <Route
-        path="/dashboard"
-        element={<StaffProtectedLayout><Dashboard /></StaffProtectedLayout>}
-      />
-      <Route
-        path="/customers"
-        element={<StaffProtectedLayout><Customers /></StaffProtectedLayout>}
-      />
-      <Route
-        path="/accounts"
-        element={<StaffProtectedLayout><Accounts /></StaffProtectedLayout>}
-      />
-      <Route
-        path="/deposit"
-        element={<StaffProtectedLayout><Deposit /></StaffProtectedLayout>}
-      />
-      <Route
-        path="/withdraw"
-        element={<StaffProtectedLayout><Withdraw /></StaffProtectedLayout>}
-      />
-      <Route
-        path="/transfer"
-        element={<StaffProtectedLayout><Transfer /></StaffProtectedLayout>}
-      />
-      <Route
-        path="/transactions"
-        element={<StaffProtectedLayout><Transactions /></StaffProtectedLayout>}
-      />
+        {/* Customer portal */}
+        <Route element={<CustomerRoute />}>
+          <Route element={<CustomerLayout />}>
+            <Route path="/customer" element={<CustomerDashboard />} />
+            <Route path="/customer/deposit" element={<CustomerDeposit />} />
+            <Route path="/customer/transfer" element={<CustomerTransfer />} />
+            <Route path="/customer/transactions" element={<CustomerTransactions />} />
+            <Route path="/customer/profile" element={<CustomerProfile />} />
+          </Route>
+        </Route>
 
-      {/* Customer Portal Protected Routes */}
-      <Route
-        path="/customer/dashboard"
-        element={<CustomerProtectedLayout><CustomerDashboard /></CustomerProtectedLayout>}
-      />
-      <Route
-        path="/customer/transfer"
-        element={<CustomerProtectedLayout><CustomerTransfer /></CustomerProtectedLayout>}
-      />
-      <Route
-        path="/customer/deposit"
-        element={<CustomerProtectedLayout><CustomerDeposit /></CustomerProtectedLayout>}
-      />
-      <Route
-        path="/customer/transactions"
-        element={<CustomerProtectedLayout><CustomerTransactions /></CustomerProtectedLayout>}
-      />
-      <Route
-        path="/customer/profile"
-        element={<CustomerProtectedLayout><CustomerProfile /></CustomerProtectedLayout>}
-      />
-
-      {/* 404 Fallback */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   );
 }

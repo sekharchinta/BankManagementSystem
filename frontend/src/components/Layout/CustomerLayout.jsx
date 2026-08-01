@@ -1,182 +1,163 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useCustomerAuth } from "../../context/CustomerAuthContext";
-import { useTheme } from "../../context/ThemeContext";
-import { 
-  LayoutDashboard, 
-  Send, 
-  PlusCircle, 
-  History, 
-  User, 
-  LogOut, 
-  Sun, 
-  Moon, 
-  Building2, 
-  CreditCard,
-  ChevronDown,
-  Bell
+import {
+  LayoutDashboard,
+  ArrowDownCircle,
+  ArrowLeftRight,
+  ReceiptText,
+  User,
+  Menu,
+  LogOut,
 } from "lucide-react";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { initials, formatAccountNumber } from "../../lib/format";
+import Logo from "../ui/Logo";
+import toast from "react-hot-toast";
 
-export default function CustomerLayout({ children }) {
-  const location = useLocation();
+const NAV_ITEMS = [
+  { name: "Dashboard", icon: LayoutDashboard, path: "/customer" },
+  { name: "Deposit", icon: ArrowDownCircle, path: "/customer/deposit" },
+  { name: "Transfer", icon: ArrowLeftRight, path: "/customer/transfer" },
+  { name: "Transactions", icon: ReceiptText, path: "/customer/transactions" },
+  { name: "Profile", icon: User, path: "/customer/profile" },
+];
+
+export default function CustomerLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { customer, activeAccount, accounts, switchAccount, logout } = useAuth();
   const navigate = useNavigate();
-  const { customer, activeAccount, setActiveAccount, accounts, logoutCustomer } = useCustomerAuth();
-  const { isDarkMode, toggleTheme } = useTheme();
-  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
 
   const handleLogout = () => {
-    logoutCustomer();
+    logout();
+    toast.success("Logged out successfully");
     navigate("/login");
   };
 
-  const navItems = [
-    { label: "Dashboard", path: "/customer/dashboard", icon: LayoutDashboard },
-    { label: "Transfer Money", path: "/customer/transfer", icon: Send },
-    { label: "Add Funds", path: "/customer/deposit", icon: PlusCircle },
-    { label: "History", path: "/customer/transactions", icon: History },
-    { label: "My Profile", path: "/customer/profile", icon: User },
-  ];
+  const displayName = customer?.full_name || "Customer";
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans transition-colors duration-200">
-      
-      {/* Top Customer Header Bar */}
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-          
-          {/* Logo & Portal Badge */}
-          <div className="flex items-center gap-3">
-            <Link to="/customer/dashboard" className="flex items-center gap-2.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 shadow-md shadow-indigo-500/20">
-                <Building2 className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent dark:from-indigo-400 dark:to-purple-400">
-                  APEX BANK
-                </span>
-                <span className="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                  Customer Portal
-                </span>
-              </div>
-            </Link>
-          </div>
+    <div className="min-h-screen bg-slate-50">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-sm lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-          {/* Account Selector & Balance Pill */}
-          {activeAccount && (
-            <div className="relative hidden md:block">
-              <button
-                onClick={() => setShowAccountDropdown(!showAccountDropdown)}
-                className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-slate-100/80 px-3.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-200 dark:border-slate-800 dark:bg-slate-800/80 dark:text-slate-200 dark:hover:bg-slate-700"
-              >
-                <CreditCard className="h-4 w-4 text-indigo-500" />
-                <span>{activeAccount.account_number} ({activeAccount.account_type})</span>
-                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                  ${Number(activeAccount.balance).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                </span>
-                <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
-              </button>
-
-              {showAccountDropdown && accounts.length > 1 && (
-                <div className="absolute right-0 mt-2 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-800 dark:bg-slate-900 z-50">
-                  <p className="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Select Account
-                  </p>
-                  {accounts.map((acc) => (
-                    <button
-                      key={acc.account_number}
-                      onClick={() => {
-                        setActiveAccount(acc);
-                        setShowAccountDropdown(false);
-                      }}
-                      className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition ${
-                        acc.account_number === activeAccount.account_number
-                          ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400"
-                          : "text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-                      }`}
-                    >
-                      <span>{acc.account_number}</span>
-                      <span className="font-mono font-bold">${Number(acc.balance).toFixed(2)}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Right Header Options */}
-          <div className="flex items-center gap-3">
-            {/* Theme Toggle Button */}
-            <button
-              onClick={toggleTheme}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
-              title="Toggle Theme"
-            >
-              {isDarkMode ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-indigo-600" />}
-            </button>
-
-            {/* Notification Bell */}
-            <div className="relative">
-              <button className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition">
-                <Bell className="h-4 w-4" />
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              </button>
-            </div>
-
-            {/* Customer User Profile Badge */}
-            <div className="flex items-center gap-2 border-l border-slate-200 pl-3 dark:border-slate-800">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-white font-bold text-xs shadow-md">
-                {customer?.full_name ? customer.full_name.charAt(0).toUpperCase() : "C"}
-              </div>
-              <div className="hidden sm:block text-left">
-                <p className="text-xs font-semibold leading-tight capitalize text-slate-800 dark:text-slate-200">
-                  {customer?.full_name || "Customer"}
-                </p>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
-                  {activeAccount?.account_number || "SB100000001"}
-                </p>
-              </div>
-
-              {/* Logout */}
-              <button
-                onClick={handleLogout}
-                className="ml-1 flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition"
-                title="Logout"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
-            </div>
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-slate-950 text-slate-300 transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-5">
+          <Logo size="sm" />
+          <div>
+            <p className="text-sm font-bold tracking-tight text-white">ApexBank</p>
+            <p className="text-[10px] font-medium uppercase tracking-widest text-slate-500">
+              Online Banking
+            </p>
           </div>
         </div>
 
-        {/* Secondary Navigation Tabs Bar */}
-        <div className="border-t border-slate-200/80 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50">
-          <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 sm:px-6">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-xs font-semibold transition ${
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-5">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={() => setSidebarOpen(false)}
+                className={({ isActive }) =>
+                  `group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors ${
                     isActive
-                      ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
-                      : "border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </header>
+                      ? "bg-brand-600/15 text-white"
+                      : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-brand-500" />
+                    )}
+                    <Icon
+                      size={17}
+                      className={isActive ? "text-brand-400" : "text-slate-500 group-hover:text-slate-300"}
+                    />
+                    <span>{item.name}</span>
+                  </>
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
 
-      {/* Main Page Content */}
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 fade-in">
-        {children}
-      </main>
+        <div className="shrink-0 border-t border-white/10 p-4">
+          <p className="text-[11px] text-slate-600">
+            © {new Date().getFullYear()} ApexBank Systems
+          </p>
+        </div>
+      </aside>
+
+      <div className="flex min-h-screen flex-col lg:pl-64 print:pl-0">
+        {/* Topbar */}
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white/80 px-4 backdrop-blur-md sm:px-6 print:hidden">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 lg:hidden"
+              aria-label="Open menu"
+            >
+              <Menu size={20} />
+            </button>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">
+                Welcome, {displayName.split(" ")[0]}
+              </p>
+              <p className="hidden text-xs text-slate-400 sm:block">
+                {activeAccount
+                  ? `${formatAccountNumber(activeAccount.account_number)} · ${activeAccount.account_type}`
+                  : "Online Banking"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {accounts.length > 1 && (
+              <select
+                value={activeAccount?.account_number || ""}
+                onChange={(e) => switchAccount(e.target.value)}
+                className="hidden h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-700 shadow-sm focus:border-brand-500 focus:outline-none sm:block"
+              >
+                {accounts.map((account) => (
+                  <option key={account.account_number} value={account.account_number}>
+                    {account.account_number} ({account.account_type})
+                  </option>
+                ))}
+              </select>
+            )}
+
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
+              {initials(displayName)}
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+            >
+              <LogOut size={14} />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          </div>
+        </header>
+
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 print:p-0">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
