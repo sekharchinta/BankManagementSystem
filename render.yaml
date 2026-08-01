@@ -6,7 +6,7 @@ services:
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
     startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --access-logfile -
     autoDeploy: true
-    healthCheckPath: /api/customers/
+    healthCheckPath: /api/health/
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: config.settings
