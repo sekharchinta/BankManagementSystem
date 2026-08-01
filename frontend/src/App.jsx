@@ -1,37 +1,33 @@
-import AppRoutes from "./routes/AppRoutes";
 import { Toaster } from "react-hot-toast";
-import { ThemeProvider } from "./context/ThemeContext";
-import { CustomerAuthProvider } from "./context/CustomerAuthContext";
+import { AuthProvider } from "./context/AuthContext";
+import AppRoutes from "./routes/AppRoutes";
 
-function App() {
+export default function App() {
   return (
-    <ThemeProvider>
-      <CustomerAuthProvider>
-        <AppRoutes />
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 3500,
-            style: {
-              background: "#1e293b",
-              color: "#f8fafc",
-              borderRadius: "12px",
-              fontSize: "14px",
-              fontFamily: "Inter, sans-serif",
-              padding: "12px 16px",
-              boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
-            },
-            success: {
-              iconTheme: { primary: "#10b981", secondary: "#fff" },
-            },
-            error: {
-              iconTheme: { primary: "#ef4444", secondary: "#fff" },
-            },
-          }}
-        />
-      </CustomerAuthProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <AppRoutes />
+      <Toaster
+        position="top-right"
+        gutter={8}
+        toastOptions={{
+          duration: 3500,
+          style: {
+            background: "#0f172a",
+            color: "#f8fafc",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "10px",
+            fontSize: "13px",
+            fontFamily: "Inter, sans-serif",
+            padding: "10px 14px",
+          },
+          success: {
+            iconTheme: { primary: "#10b981", secondary: "#ffffff" },
+          },
+          error: {
+            iconTheme: { primary: "#ef4444", secondary: "#ffffff" },
+          },
+        }}
+      />
+    </AuthProvider>
   );
 }
-
-export default App;

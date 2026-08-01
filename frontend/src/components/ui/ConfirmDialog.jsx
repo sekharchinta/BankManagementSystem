@@ -1,55 +1,33 @@
-import React from "react";
+import Modal from "./Modal";
 import Button from "./Button";
+import { AlertTriangle } from "lucide-react";
 
 export default function ConfirmDialog({
   open,
-  title = "Confirm Action",
-  message = "Are you sure?",
-  confirmText = "Confirm",
-  cancelText = "Cancel",
+  onClose,
   onConfirm,
-  onCancel,
+  title = "Are you sure?",
+  description = "This action cannot be undone.",
+  confirmLabel = "Delete",
+  loading = false,
 }) {
-
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-
-        <div className="p-6">
-
-          <h2 className="text-xl font-semibold text-slate-800">
-            {title}
-          </h2>
-
-          <p className="mt-3 text-slate-500">
-            {message}
-          </p>
-
+    <Modal open={open} onClose={onClose} size="sm">
+      <div className="flex flex-col items-center text-center">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-50">
+          <AlertTriangle size={22} className="text-rose-600" />
         </div>
-
-        <div className="border-t p-5 flex justify-end gap-3">
-
-          <Button
-            variant="secondary"
-            onClick={onCancel}
-          >
-            {cancelText}
-          </Button>
-
-          <Button
-            variant="danger"
-            onClick={onConfirm}
-          >
-            {confirmText}
-          </Button>
-
-        </div>
-
+        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+        <p className="mt-1.5 max-w-sm text-sm text-slate-500">{description}</p>
       </div>
-
-    </div>
+      <div className="mt-6 flex justify-center gap-3">
+        <Button variant="outline" onClick={onClose} disabled={loading}>
+          Cancel
+        </Button>
+        <Button variant="danger" onClick={onConfirm} loading={loading}>
+          {confirmLabel}
+        </Button>
+      </div>
+    </Modal>
   );
 }

@@ -1,32 +1,20 @@
-import React from "react";
 import { Inbox } from "lucide-react";
 
 export default function EmptyState({
-  title = "No Data Found",
-  description = "There is nothing to display.",
+  icon: Icon = Inbox,
+  title = "Nothing here yet",
+  description = "No records found. Try adjusting your search or filters.",
   action,
-  icon,
+  className = "",
 }) {
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-12 flex flex-col items-center text-center">
-
-      <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-6">
-        {icon || <Inbox size={40} className="text-slate-400" />}
+    <div className={`flex flex-col items-center justify-center px-6 py-14 text-center ${className}`}>
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
+        <Icon size={24} className="text-slate-400" />
       </div>
-
-      <h2 className="text-xl font-semibold text-slate-800">
-        {title}
-      </h2>
-
-      <p className="text-slate-500 mt-2 max-w-md">
-        {description}
-      </p>
-
-      {action && (
-        <div className="mt-6">
-          {action}
-        </div>
-      )}
+      <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
+      <p className="mt-1 max-w-sm text-xs text-slate-500">{description}</p>
+      {action && <div className="mt-4">{action}</div>}
     </div>
   );
 }
