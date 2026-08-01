@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: bank-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --access-logfile -
+    autoDeploy: true
+    healthCheckPath: /api/customers/
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: "*"
+      - key: DB_NAME
+        value: bank_management_system
+      - key: DB_USER
+        value: bank
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "3306"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "http://localhost:5173,http://127.0.0.1:5173"
