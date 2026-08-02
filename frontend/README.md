@@ -1,4 +1,4 @@
-# ApexBank Frontend
+# FinCore Frontend
 
 React 19 + Vite 8 + Tailwind CSS 4 SPA for the Bank Management System.
 
