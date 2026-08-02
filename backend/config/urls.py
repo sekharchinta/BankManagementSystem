@@ -24,7 +24,7 @@ def db_health(request):
         "host": cfg.get("HOST"),
         "port": cfg.get("PORT"),
         "user": cfg.get("USER"),
-        "database": cfg.get("NAME"),
+        "database_name": cfg.get("NAME"),
         "options": cfg.get("OPTIONS"),
     }
     try:
@@ -33,7 +33,7 @@ def db_health(request):
             cursor.fetchone()
         return JsonResponse({"status": "ok", "database": "connected", **info})
     except Exception as exc:  # noqa: BLE001
-        return JsonResponse({"status": "error", "database": str(exc), **info})
+        return JsonResponse({"status": "error", "message": str(exc), **info})
 
 
 urlpatterns = [
