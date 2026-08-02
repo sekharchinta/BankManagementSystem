@@ -95,6 +95,12 @@ CORS_ALLOWED_ORIGINS = [origin.strip() for origin in CORS_ALLOWED_ORIGINS]
 
 CORS_ALLOW_CREDENTIALS = True
 
+# Allow every Vercel deployment/preview URL of the frontend project
+# (production + per-deploy hashes like bank-management-system-sandy-psi.vercel.app).
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://bank-management-system(-[a-z0-9]+)*\.vercel\.app$",
+]
+
 # If True in development, CORS will allow all origins (NOT recommended for production)
 CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'False') == 'True'
 
