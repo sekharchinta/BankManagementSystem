@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.conf import settings
 from django.db import connection
 from django.http import JsonResponse
 from django.urls import include, path
@@ -18,13 +19,21 @@ def health(request):
 
 
 def db_health(request):
+    cfg = settings.DATABASES["default"]
+    info = {
+        "host": cfg.get("HOST"),
+        "port": cfg.get("PORT"),
+        "user": cfg.get("USER"),
+        "database": cfg.get("NAME"),
+        "options": cfg.get("OPTIONS"),
+    }
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT COUNT(*) FROM auth_user")
             cursor.fetchone()
-        return JsonResponse({"status": "ok", "database": "connected"})
+        return JsonResponse({"status": "ok", "database": "connected", **info})
     except Exception as exc:  # noqa: BLE001
-        return JsonResponse({"status": "error", "database": str(exc)})
+        return JsonResponse({"status": "error", "database": str(exc), **info})
 
 
 urlpatterns = [
