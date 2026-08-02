@@ -4,8 +4,8 @@ import { useAuth } from "../context/AuthContext";
 
 import StaffRoute from "../components/routes/StaffRoute";
 import CustomerRoute from "../components/routes/CustomerRoute";
-import StaffLayout from "../components/layout/StaffLayout";
-import CustomerLayout from "../components/layout/CustomerLayout";
+import StaffLayout from "../components/Layout/StaffLayout";
+import CustomerLayout from "../components/Layout/CustomerLayout";
 import Spinner from "../components/ui/Spinner";
 
 const Login = lazy(() => import("../pages/Login"));
