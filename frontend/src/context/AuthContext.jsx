@@ -72,11 +72,12 @@ export function AuthProvider({ children }) {
     if (!activeAccount?.account_number) return null;
     const data = await customerMe(activeAccount.account_number);
     if (data.customer) setCustomer(data.customer);
-    if (data.accounts) setAccounts(data.accounts);
-    if (data.primary_account) {
+    if (data.accounts) {
+      setAccounts(data.accounts);
       const matched =
-        data.accounts?.find((a) => a.account_number === activeAccount.account_number) ||
-        data.primary_account;
+        data.accounts.find((a) => a.account_number === activeAccount.account_number) ||
+        data.primary_account ||
+        data.accounts[0];
       setActiveAccount(matched);
     }
     return data;

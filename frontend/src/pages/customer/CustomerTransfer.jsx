@@ -4,11 +4,12 @@ import toast from "react-hot-toast";
 import PageHeader from "../../components/ui/PageHeader";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import HiddenBalance from "../../components/ui/HiddenBalance";
 import { Field, Input, Textarea } from "../../components/ui/Field";
 import { useAuth } from "../../context/AuthContext";
 import { customerTransfer } from "../../services/customers";
 import { getErrorMessage } from "../../lib/api";
-import { formatAccountNumber, formatCurrency } from "../../lib/format";
+import { formatAccountNumber } from "../../lib/format";
 
 export default function CustomerTransfer() {
   const { activeAccount, refreshCustomer } = useAuth();
@@ -54,7 +55,11 @@ export default function CustomerTransfer() {
       setAmount("");
       setNote("");
       toast.success("Transfer successful");
-      refreshCustomer();
+      try {
+        await refreshCustomer();
+      } catch {
+        /* balance refresh is best-effort */
+      }
     } catch (err) {
       const message = getErrorMessage(err, "Transfer failed.");
       setError(message);
@@ -80,9 +85,11 @@ export default function CustomerTransfer() {
                 {formatAccountNumber(activeAccount?.account_number)}
               </p>
             </div>
-            <p className="tabular-nums text-lg font-bold text-brand-700">
-              {formatCurrency(activeAccount?.balance)}
-            </p>
+            <HiddenBalance
+              value={activeAccount?.balance}
+              className="text-lg font-bold text-brand-700"
+              iconSize={15}
+            />
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -92,7 +99,7 @@ export default function CustomerTransfer() {
               </p>
             )}
 
-            <Field label="Receiver account number" required hint="e.g. SB100000002">
+            <Field label="Receiver account number" required hint="Receiver's account number">
               <Input
                 type="text"
                 value={receiver}
@@ -120,7 +127,7 @@ export default function CustomerTransfer() {
             </Field>
 
             <Field label="Description" hint="Optional note shown to the receiver">
-              <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="e.g. Rent payment" />
+              <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="What's this transfer for? (optional)" />
             </Field>
 
             <Button type="submit" size="lg" className="w-full" icon={ArrowLeftRight} loading={loading}>
@@ -143,9 +150,9 @@ export default function CustomerTransfer() {
                       <span>To</span>
                       <span className="font-mono font-semibold">{result.receiver?.account_number || "—"}</span>
                     </p>
-                    <p className="flex justify-between">
+                    <p className="flex items-center justify-between">
                       <span>Sender balance</span>
-                      <span className="font-semibold">{formatCurrency(result.sender?.balance)}</span>
+                      <HiddenBalance value={result.sender?.balance} iconSize={12} className="font-semibold" />
                     </p>
                   </div>
                 </div>

@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Mail, Phone, MapPin, Cake, KeyRound, Building2, Save } from "lucide-react";
 import toast from "react-hot-toast";
 import PageHeader from "../../components/ui/PageHeader";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import HiddenBalance from "../../components/ui/HiddenBalance";
 import { Field, Input } from "../../components/ui/Field";
 import { useAuth } from "../../context/AuthContext";
 import { getProfile, updateProfile, changePassword } from "../../services/auth";
 import { getErrorMessage } from "../../lib/api";
-import { formatDate, formatAccountNumber, initials, formatCurrency } from "../../lib/format";
+import { formatDate, formatAccountNumber, initials } from "../../lib/format";
 import { useAsync } from "../../hooks/useAsync";
 
 function InfoRow({ icon: Icon, label, value }) {
@@ -26,8 +27,12 @@ function InfoRow({ icon: Icon, label, value }) {
 }
 
 export default function CustomerProfile() {
-  const { customer, accounts, setStaffProfile } = useAuth();
+  const { customer, accounts, setStaffProfile, refreshCustomer } = useAuth();
   const profile = useAsync(() => getProfile(), []);
+
+  useEffect(() => {
+    refreshCustomer().catch(() => {});
+  }, [refreshCustomer]);
 
   const [form, setForm] = useState({ first_name: "", last_name: "", email: "" });
   const [formTouched, setFormTouched] = useState(false);
@@ -135,9 +140,11 @@ export default function CustomerProfile() {
                     </p>
                   </div>
                 </div>
-                <p className="tabular-nums text-sm font-bold text-slate-900">
-                  {formatCurrency(account.balance)}
-                </p>
+                <HiddenBalance
+                  value={account.balance}
+                  className="text-sm font-bold text-slate-900"
+                  iconSize={13}
+                />
               </div>
             ))}
           </div>

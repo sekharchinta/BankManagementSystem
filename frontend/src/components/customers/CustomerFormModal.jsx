@@ -121,7 +121,7 @@ export default function CustomerFormModal({ open, onClose, customer, onSaved }) 
           <Input
             value={form.full_name}
             onChange={setField("full_name")}
-            placeholder="e.g. Rahul Sharma"
+            placeholder="Enter customer's full name"
           />
         </Field>
 
@@ -130,7 +130,7 @@ export default function CustomerFormModal({ open, onClose, customer, onSaved }) 
             type="email"
             value={form.email}
             onChange={setField("email")}
-            placeholder="name@email.com"
+            placeholder="Enter email address"
           />
         </Field>
 
@@ -139,7 +139,7 @@ export default function CustomerFormModal({ open, onClose, customer, onSaved }) 
             type="tel"
             value={form.phone}
             onChange={setField("phone")}
-            placeholder="e.g. 9876543210"
+            placeholder="Enter 10-digit mobile number"
           />
         </Field>
 
