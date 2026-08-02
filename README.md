@@ -1,4 +1,4 @@
-# ApexBank — Bank Management System
+# FinCore — Bank Management System
 
 A full-stack bank management platform with two portals: a **staff/admin console** for
 managing customers, accounts, and transactions, and a **customer portal** for online

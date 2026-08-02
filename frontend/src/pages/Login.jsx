@@ -114,7 +114,7 @@ const INSURANCE_ADS = [
   {
     icon: ShieldCheck,
     tag: "Term Plan",
-    title: "Apex Secure Life",
+    title: "FinCore Secure Life",
     text: "Up to ₹2 Cr life cover with returns up to 8% p.a. over 20 years.",
     cta: "Get a quote",
   },
@@ -904,7 +904,7 @@ export default function Login() {
                 </li>
                 <li className="flex items-center gap-2.5">
                   <Mail size={15} className="text-brand-400" />
-                  care@apexbank.co.in
+                  care@fincore.co.in
                 </li>
                 <li className="flex items-center gap-2.5">
                   <Smartphone size={15} className="text-brand-400" />

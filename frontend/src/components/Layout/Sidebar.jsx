@@ -71,7 +71,7 @@ export default function Sidebar({ open, onClose }) {
         <div className="flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-5">
           <Logo size="sm" />
           <div>
-            <p className="text-sm font-bold tracking-tight text-white">ApexBank</p>
+            <p className="text-sm font-bold tracking-tight text-white">FinCore</p>
             <p className="text-[10px] font-medium uppercase tracking-widest text-slate-500">
               Management
             </p>
@@ -124,7 +124,7 @@ export default function Sidebar({ open, onClose }) {
         {/* Footer */}
         <div className="shrink-0 border-t border-white/10 px-5 py-4">
           <p className="text-[11px] text-slate-600">
-            © {new Date().getFullYear()} ApexBank Systems
+            © {new Date().getFullYear()} FinCore Systems
           </p>
         </div>
       </aside>

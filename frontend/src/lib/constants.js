@@ -1,4 +1,4 @@
-export const APP_NAME = "ApexBank";
+export const APP_NAME = "FinCore";
 export const APP_TAGLINE = "Bank Management System";
 
 export const CURRENCY = "INR";
