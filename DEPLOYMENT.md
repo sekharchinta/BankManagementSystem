@@ -50,6 +50,8 @@ CORS instead of a reverse proxy. Set `VITE_API_URL` at build time to the backend
    | `DB_PASSWORD`           | your MySQL password                                          |
    | `DB_HOST`               | your MySQL host                                              |
    | `DB_PORT`               | `3306`                                                       |
+   | `DB_SSL`                | `True` (Aiven and some others require TLS)                   |
+   | `DB_SSL_CA`             | *(optional)* path to the CA cert file                        |
 
    > Render has **no managed MySQL**. Use one of: Railway MySQL add-on, Aiven for MySQL,
    > DigitalOcean Managed MySQL, or Clever Cloud. `mysqlclient` installs fine on Render
@@ -85,6 +87,11 @@ CORS instead of a reverse proxy. Set `VITE_API_URL` at build time to the backend
 
 Aiven (free tier) or DigitalOcean Managed MySQL. From the provider get: host, port,
 user, password, database name. Put them in the backend `DB_*` env vars.
+
+> **Aiven enforces TLS.** Set `DB_SSL=True` on the backend (uses `ssl_mode=REQUIRED`,
+> no certificate file needed). For full certificate verification instead, download
+> Aiven's **CA Certificate**, place it in `backend/`, and set `DB_SSL_CA` to its path.
+> Your local `.env` can enable SSL the same way.
 
 ---
 
