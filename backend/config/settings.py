@@ -113,6 +113,14 @@ DATABASES = {
     }
 }
 
+# Managed MySQL providers (e.g. Aiven) require TLS.
+if os.getenv("DB_SSL", "False") == "True":
+    DATABASES["default"]["OPTIONS"] = {"ssl_mode": "REQUIRED"}
+
+db_ssl_ca = os.getenv("DB_SSL_CA", "").strip()
+if db_ssl_ca:
+    DATABASES["default"]["OPTIONS"] = {"ssl": {"ca": db_ssl_ca}}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
