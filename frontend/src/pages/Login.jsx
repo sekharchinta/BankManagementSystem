@@ -601,7 +601,7 @@ export default function Login() {
                           type="text"
                           value={identifier}
                           onChange={(e) => setIdentifier(e.target.value)}
-                          placeholder="e.g. SB100000001 or name@email.com"
+                          placeholder="Enter account number or email"
                           autoComplete="username"
                         />
                       </Field>
@@ -655,7 +655,7 @@ export default function Login() {
                           type="text"
                           value={username}
                           onChange={(e) => setUsername(e.target.value)}
-                          placeholder="e.g. admin"
+                          placeholder="Enter your username"
                           autoComplete="username"
                         />
                       </Field>
@@ -703,7 +703,7 @@ export default function Login() {
                           type="text"
                           value={registerForm.full_name}
                           onChange={setRegister("full_name")}
-                          placeholder="e.g. John Doe"
+                          placeholder="Enter your full name"
                           autoComplete="name"
                         />
                       </Field>
@@ -714,7 +714,7 @@ export default function Login() {
                             type="email"
                             value={registerForm.email}
                             onChange={setRegister("email")}
-                            placeholder="name@email.com"
+                            placeholder="Enter your email address"
                             autoComplete="email"
                           />
                         </Field>
@@ -723,7 +723,7 @@ export default function Login() {
                             type="tel"
                             value={registerForm.phone}
                             onChange={setRegister("phone")}
-                            placeholder="e.g. 9876543210"
+                            placeholder="Enter your 10-digit mobile number"
                             autoComplete="tel"
                           />
                         </Field>
@@ -750,7 +750,7 @@ export default function Login() {
                           type="text"
                           value={registerForm.address}
                           onChange={setRegister("address")}
-                          placeholder="Street, city, state"
+                          placeholder="Enter your residential address"
                           autoComplete="street-address"
                         />
                       </Field>

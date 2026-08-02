@@ -90,7 +90,6 @@ export default function CustomerTransactions() {
     key: tx.id,
     type: <TransactionBadge type={tx.transaction_type} />,
     amount: <AmountCell transaction={tx} />,
-    balance: formatCurrency(tx.balance_after_transaction),
     counterparty: tx.reference_account || "—",
     description: tx.description || "—",
     date: formatDateTime(tx.created_at),
@@ -167,12 +166,6 @@ export default function CustomerTransactions() {
           columns={[
             { key: "type", header: "Type", render: (r) => r.type },
             { key: "amount", header: "Amount", align: "right", render: (r) => r.amount },
-            {
-              key: "balance",
-              header: "Balance After",
-              align: "right",
-              render: (r) => <span className="tabular-nums text-slate-500">{r.balance}</span>,
-            },
             {
               key: "counterparty",
               header: "Counterparty",

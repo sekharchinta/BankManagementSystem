@@ -4,11 +4,12 @@ import toast from "react-hot-toast";
 import PageHeader from "../../components/ui/PageHeader";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import HiddenBalance from "../../components/ui/HiddenBalance";
 import { Field, Input, Textarea } from "../../components/ui/Field";
 import { useAuth } from "../../context/AuthContext";
 import { customerDeposit } from "../../services/customers";
 import { getErrorMessage } from "../../lib/api";
-import { formatAccountNumber, formatCurrency } from "../../lib/format";
+import { formatAccountNumber } from "../../lib/format";
 
 export default function CustomerDeposit() {
   const { activeAccount, refreshCustomer } = useAuth();
@@ -37,7 +38,11 @@ export default function CustomerDeposit() {
       setAmount("");
       setNote("");
       toast.success("Deposit successful");
-      refreshCustomer();
+      try {
+        await refreshCustomer();
+      } catch {
+        /* balance refresh is best-effort */
+      }
     } catch (err) {
       const message = getErrorMessage(err, "Deposit failed.");
       setError(message);
@@ -63,9 +68,11 @@ export default function CustomerDeposit() {
                 {formatAccountNumber(activeAccount?.account_number)}
               </p>
             </div>
-            <p className="tabular-nums text-lg font-bold text-emerald-700">
-              {formatCurrency(activeAccount?.balance)}
-            </p>
+            <HiddenBalance
+              value={activeAccount?.balance}
+              className="text-lg font-bold text-emerald-700"
+              iconSize={15}
+            />
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -93,7 +100,7 @@ export default function CustomerDeposit() {
             </Field>
 
             <Field label="Description" hint="Optional note">
-              <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="e.g. Salary credit" />
+              <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Add a note (optional)" />
             </Field>
 
             <Button type="submit" size="lg" className="w-full" icon={ArrowDownCircle} loading={loading}>
@@ -113,9 +120,11 @@ export default function CustomerDeposit() {
                   </p>
                   <p className="mt-1 text-xs text-emerald-700">
                     Your current balance is{" "}
-                    <span className="font-bold">
-                      {formatCurrency(result.current_balance)}
-                    </span>
+                    <HiddenBalance
+                      value={result.current_balance}
+                      iconSize={12}
+                      className="font-bold text-emerald-800"
+                    />
                   </p>
                 </div>
               </div>

@@ -11,15 +11,12 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import Card from "../../components/ui/Card";
 import Table from "../../components/ui/Table";
+import HiddenBalance from "../../components/ui/HiddenBalance";
 import { TransactionBadge, AmountCell } from "../../components/shared/TransactionBadge";
 import { useAuth } from "../../context/AuthContext";
 import { customerTransactions } from "../../services/customers";
 import { getErrorMessage } from "../../lib/api";
-import {
-  formatAccountNumber,
-  formatCurrency,
-  formatDateTime,
-} from "../../lib/format";
+import { formatAccountNumber, formatDateTime } from "../../lib/format";
 
 const QUICK_ACTIONS = [
   {
@@ -46,9 +43,13 @@ const QUICK_ACTIONS = [
 ];
 
 export default function CustomerDashboard() {
-  const { customer, accounts, activeAccount } = useAuth();
+  const { customer, accounts, activeAccount, refreshCustomer } = useAuth();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    refreshCustomer().catch(() => {});
+  }, [refreshCustomer]);
 
   const loadTransactions = useCallback(async () => {
     if (!activeAccount?.account_number) return;
@@ -78,7 +79,6 @@ export default function CustomerDashboard() {
     key: tx.id,
     type: <TransactionBadge type={tx.transaction_type} />,
     amount: <AmountCell transaction={tx} />,
-    balance: formatCurrency(tx.balance_after_transaction),
     date: formatDateTime(tx.created_at),
   }));
 
@@ -103,9 +103,11 @@ export default function CustomerDashboard() {
               <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
                 Total Balance
               </p>
-              <p className="tabular-nums mt-2 text-4xl font-bold tracking-tight">
-                {formatCurrency(activeAccount?.balance)}
-              </p>
+              <HiddenBalance
+                value={activeAccount?.balance}
+                className="mt-2 text-4xl font-bold tracking-tight"
+                iconSize={20}
+              />
             </div>
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10">
               <Wallet size={20} />
@@ -166,9 +168,11 @@ export default function CustomerDashboard() {
                       )}
                     </p>
                   </div>
-                  <p className="tabular-nums text-sm font-bold text-slate-900">
-                    {formatCurrency(account.balance)}
-                  </p>
+                  <HiddenBalance
+                    value={account.balance}
+                    className="text-sm font-bold text-slate-900"
+                    iconSize={13}
+                  />
                 </div>
               );
             })}
@@ -219,12 +223,6 @@ export default function CustomerDashboard() {
               header: "Amount",
               align: "right",
               render: (r) => r.amount,
-            },
-            {
-              key: "balance",
-              header: "Balance After",
-              align: "right",
-              render: (r) => <span className="tabular-nums text-slate-500">{r.balance}</span>,
             },
             {
               key: "date",
